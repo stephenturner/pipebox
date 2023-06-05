@@ -1,0 +1,14 @@
+name: pipebox
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - htslib=1.17
+  - samtools=1.17
+  - bcftools=1.17
+  - bwa=0.7.17
+  - r-dplyr
+  - r-ggplot2
+  - r-knitr
+  - r-rmarkdown 
