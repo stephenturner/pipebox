@@ -1,0 +1,9 @@
+# fasta, samtools faidx, and bwa indexes
+*.fasta
+*.fa
+*.fai
+*.amb
+*.ann
+*.bwt
+*.pac
+*.sa
