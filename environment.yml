@@ -1,4 +1,4 @@
-name: pipebox
+name: base
 channels:
   - conda-forge
   - bioconda
