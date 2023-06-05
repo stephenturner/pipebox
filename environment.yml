@@ -10,5 +10,9 @@ dependencies:
   - bwa=0.7.17
   - r-dplyr
   - r-ggplot2
+  - r-scales
   - r-knitr
   - r-rmarkdown 
+  - r-readr
+  - r-tidyr
+  - r-patchwork
