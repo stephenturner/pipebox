@@ -1,24 +1,17 @@
 #!/bin/bash
 set -e
 
-# Use this for interactive development FIXME delete this later
-# srcdir="/Users/turner/repos/pipebox/src"
-# read1="/Users/turner/repos/pipebox/testdata/SRR507778_1.fastq.gz"
-# read2="/Users/turner/repos/pipebox/testdata/SRR507778_2.fastq.gz"
-# reffa="/Users/turner/repos/pipebox/testdata/yeastref.fa"
-# outbase="/Users/turner/repos/pipebox/testdata/results/SRR507778"
-
 # Check usage
 if [ "$#" -ne 4 ]; then echo "Usage: pipebox.sh <read1> <read2> <reffa> <outbase>"; exit 1; fi
 
-# Set vars
+# Set variables used throughout this script
 srcdir=$(dirname $0)
 read1=$1
 read2=$2
 reffa=$3
 outbase=$4
 
-# Check that files exist
+# Check that files exist inside the container. 
 if [ ! -f "$read1" ]; then echo "$read1 doesn't exist"; exit 1; fi
 if [ ! -f "$read2" ]; then echo "$read2 doesn't exist"; exit 1; fi
 if [ ! -f "$reffa" ]; then echo "$reffa doesn't exist"; exit 1; fi

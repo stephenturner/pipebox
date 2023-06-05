@@ -1,8 +1,5 @@
 #!/usr/bin/env Rscript
 
-# For interactive development
-# args <- "/Users/turner/repos/pipebox/testdata/results/SRR507778"
-
 suppressPackageStartupMessages({
   library(readr)
   library(dplyr)
