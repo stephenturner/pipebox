@@ -143,3 +143,62 @@ You should see all the files in the `testdata/results` folder:
 
 ![Report compiling a few outputs from each of the tools above.](testdata/results/SRR507778.metrics.png)
 
+## How it works
+
+### The `Dockerfile`
+
+Let's start with a look at the [Dockerfile](Dockerfile). Rather than starting this image with a vanilla Debian or Ubuntu image, we actually start from an image that already has mamba (a faster/better conda) installed. If you're interested you can see how this image is built looking at its [Dockerfile in the conda-forge/miniforge-images GitHub repo](https://github.com/conda-forge/miniforge-images/blob/master/ubuntu/Dockerfile).
+
+```Dockerfile
+FROM condaforge/mambaforge
+```
+
+Next, we copy the [environment.yml](environment.yml) file in _this_ repo, which lives on the host system, into the container at `/`. Take a look at this [environment.yml](environment.yml) file. This defines all the dependencies we want to install via conda, and specifies the versions of some tools. Note that the name of the conda environment is `base` -- that's because rather than creating a new conda environment with a different name, we'll just install all this stuff in the base environment, which is the environment that's running when this container spins itself up. The `RUN` command runs the command inside the container image build to update the base environment with the YAML file that was copied into `/` from the `COPY` statement above.
+
+```Dockerfile
+COPY ./environment.yml /environment.yml
+RUN mamba env update --file /environment.yml
+```
+
+In the next section, we're going to install seqtk from source. Seqtk is available via conda, but I want to demonstrate how to build something from source that might not be available via conda. First I need to install some basic utilities. The GNU C compiler, Make, and the zlib developmental libraries. I'm also installing vim in case I need to step into the running container and edit something while debugging. Next, I set a build variable specifying the version of seqtk I want to use, then set about downloading the source code, compiling from source, and installing inside the container image.
+
+```Dockerfile
+RUN apt update && apt install -y vim gcc make zlib1g-dev
+ARG VERSION_SEQTK="1.4"
+RUN wget -q https://github.com/lh3/seqtk/archive/refs/tags/v${VERSION_SEQTK}.tar.gz && \
+    tar xzf v${VERSION_SEQTK}.tar.gz && \
+    cd seqtk-${VERSION_SEQTK} && \
+    make && \
+    make install
+```
+
+Next, I'm copying the [`src`](src) directory in this repo, and which will be on the host system, into the container build at `/`. This is important in the next step. We'll get to what's in the [`src`](src) directory in the next step. This means that whenever the container is instantiated, all the stuff in [`src`](src) will be available inside the running container at `/src/*`.
+
+```Dockerfile
+COPY ./src /src
+```
+
+Finally, I declare an ENTRYPOINT. This is the command that's run whenever the docker container is instantiated. It's the script we'll go over next.
+
+```Dockerfile
+ENTRYPOINT ["/bin/bash", "/src/pipebox.sh"]
+```
+
+### The pipeline script
+
+When the container is initialized, the [pipebox.sh](src/pipebox.sh) pipeline script is run from `/src/pipebox.sh` _inside the container_. This script expects four command-line arguments, as described above. Command line arguments must be specified to locations _relative to the inside of the running container_, hence the `-v $(pwd):$(pwd) -w $(pwd)` trick described above to operate on files living in the present working directory on the host system.
+
+You can view the [pipebox.sh](src/pipebox.sh) script itself to see what's going on. It's doing everything described above in the [Motivation](#motivation) section. Everything here is happening via a shell script, operating on files inside the container, which are usually volume-mounted from the host. This pipeline script could be a shell script, python script, a shell script that launches a Nextflow run (if Nextflow is installed and configured inside the container), or any arbitrary code that's executed inside the running container on files volume-mounted from the host. This pipeline script could call any number of secondary scripts for further processing. In this example, it calls an R script to do post-processing on the results.
+
+### The post-processing script
+
+The last step that the [pipebox.sh](src/pipebox.sh) script performs is that it calls another script, [pipebox-post.R](src/pipebox-post.R), which is an R script that performs postprocessing on the outputs from `seqtk`, `samtools stats`, and `bcftools stats` run by the main script. You can read the code in [pipebox-post.R](src/pipebox-post.R) to get a sense of what it's doing -- essentially reading in and parsing the tabular output from these tools and stitching a few plots together. Outputs are shown above in the [Results](#results) section.
+
+## For developers
+
+The pipebox image can be built with the `latest` and `x.y.z` tag using the [build.sh](build.sh) script in this container, optionally passing the `--no-cache` flag. The version is scraped from a commented version string in this README. The image is also tagged with `latest` and `x.y.z` for the GitHub Container Registry namespace. To build and deploy:
+
+```sh
+./build.sh --no-cache
+docker push --all-tags ghcr.io/colossal-compsci/pipebox
+```
