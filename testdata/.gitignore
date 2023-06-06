@@ -2,6 +2,7 @@
 *.fasta
 *.fa
 *.fai
+*.gzi
 *.amb
 *.ann
 *.bwt
