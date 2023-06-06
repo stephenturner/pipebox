@@ -1,5 +1,8 @@
 # pipebox
 
+<!-- SOFTWARE pipebox -->
+<!-- VERSION 1.0.0 -->
+
 Pipeline in a Docker container
 
 - [Background](#background)
@@ -13,7 +16,17 @@ Pipeline in a Docker container
   - [The `Dockerfile`](#the-dockerfile)
   - [The pipeline script](#the-pipeline-script)
   - [The post-processing script](#the-post-processing-script)
+- [For developers](#for-developers)
 
+<!--
+
+# Build and ship: 
+# export GHCR_PAT="YOUR_TOKEN_HERE"
+# echo $GHCR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+docker build build --no-cache --tag pipebox:latest --tag ghcr.io/colossal-compsci/pipebox:latest .
+docker push ghcr.io/colossal-compsci/pipebox:latest
+
+-->
 
 ## Background
 
@@ -46,7 +59,26 @@ All of these data processing steps happen _inside the container_. You provide a 
 
 ### Preliminaries
 
-FIXME assumed knowledge
+This repo assumes a minimal working understanding of containerization, including the difference between an image and a container, and how they're each created. If you're familiar with all these concepts, you can skip to the [Demo](#demo) section below.
+
+A Docker _image_ is like a blueprint or a snapshot of what a container will look like when it runs. Images are _created from code_ using a Dockerfile, which is a set of instructions used to create the image. This is important, because with Dockerfiles we can _define infrastructure in code_ -- code which can be easily version controlled and worked on collaboratively in a platform like GitHub. When we have our instructions for building an image written out in a Dockerfile, we can create an image using `docker build`.
+
+Once we have an image, we can "rehydrate" that image and bring to life a running _container_ using `docker run`. When a container is initialized, it spins up, does whatever it needs to do, and is destroyed. A container could serve a long-running process, such as a webservice or database. Here, we're spinning up a container that runs a script _inside that container_. When the script runs to completion, the container is destroyed. From a single image we can use `docker run` to spin up one running container or one thousand running containers, all starting from the identical image. 
+
+![Docker images versus containers.](img/dockerfile-image-container.png)
+
+Another important concept is a _volume mount_. A running container is a virtualized operating system with its own software and importantly, its own _filesystem_ inside the container. If we have a plain Alpine linux container and run something like `docker run alpine ls`, this will start the alpine container and run `ls` in the default working directory, which is `/`, _inside the container_. That is, you'll see the usual system folders like `/bin`, `/dev`, `/etc`, and others. If you were to run `docker run alpine ls /home` you'll see _nothing_ - because the container has no users other than root! 
+
+This concept is important because if you're running tools inside the container, you must provide a way to have files on the host system (i.e., your computer or VM) to be accessible to the running container. To do this we use the `--volume` or more commonly the short `-v` flag, which allows us to mount local directories to the container. For instance, `docker run -v /home/turner/mydata:/data` would mount `/home/turner/mydata` from my laptop to `/data` inside the running container. If I have a script that expects to see data in `/data` inside the container, this would work well. 
+
+Here's a common trick that allows you to mount contents of the present working directory on your machine to the running container using shell substitution with `$(pwd)`. Using `-v $(pwd):(pwd)` mounts the present working directory on the host system to a path of the same name inside the container, and `-w $(pwd)` _sets_ the working directory inside the container to the same directory specified by the volume mount. 
+
+Further suggested reading:
+
+- **StaPH-B docker user guide**: https://staphb.org/docker-builds/. This is an excellent guide to using Docker in bioinformatics written by a group of bioinformaticians working in public health labs. Start with the chapters in the upper-right. Specifically useful are the [running containers chapter](https://staphb.org/docker-builds/run_containers/) which provides additional detail on volume mounts, and [developing containers chapter](https://staphb.org/docker-builds/make_containers/) which discusses creating Dockerfiles, building images, and initializing containers. 
+- **"Ten simple rules for writing Dockerfiles for reproducible data science."** _PLoS computational biology_ 16.11 (2020): e1008316. DOI:[10.1371/journal.pcbi.1008316](https://doi.org/10.1371/journal.pcbi.1008316). This paper provides a great overview on containerization with a specific focus on the importance of Dockerfiles for reproducible data science and bioinformatics workflows.
+- **"pracpac: Practical R Packaging with Docker."** arXiv:2303.07876 (2023). DOI:[10.48550/arXiv.2303.07876](https://doi.org/10.48550/arXiv.2303.07876). Shameless self-promo: I wrote this paper and the software it describes for automating the building and deployment of pipelines-as-Docker-containers with specific attention to pipelines which require a custom-built R package as part of the pipeline. The software is implemented as an R package and it's R-centric (Shiny, MLOps with tidymodels, etc.), but isn't limited solely to R and R-related tools, as demonstrated in the package vignettes.
+
 
 ## Demo
 
@@ -58,6 +90,20 @@ First, get this repository and build the pipebox image.
 git clone git@github.com:colossal-compsci/pipebox.git
 cd pipebox
 docker build --tag pipebox .
+```
+
+Alternatively, [create a personal access token](https://github.com/settings/tokens) with read permissions for the GitHub Container Registry, login (once), then [pull the container directly from the GitHub Container Registry](https://ghcr.io/colossal-compsci/pipebox).
+
+```sh
+## Run once
+# export GHCR_PAT="YOUR_TOKEN_HERE"
+# echo $GHCR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+
+# Pull the image
+docker pull ghcr.io/colossal-compsci/pipebox
+
+# Give it a short name so you can run it more easily
+docker tag ghcr.io/colossal-compsci/pipebox pipebox
 ```
 
 ### Run
