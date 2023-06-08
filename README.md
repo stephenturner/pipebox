@@ -57,6 +57,8 @@ What the pipeline does:
 
 All of these data processing steps happen _inside the container_. You provide a volume mount to the container so that you can mount the local filesystem to a location inside the running container. Data processing happens inside the container. Output files are also written to a location that is mounted to the container (e.g., the present working directory). This pipeline will run on any system where Docker is available. 
 
+![Schematic of the workflow-in-a-container.](img/workflow-in-a-container.png)
+
 ### Preliminaries
 
 This repo assumes a minimal working understanding of containerization, including the difference between an image and a container, and how they're each created. If you're familiar with all these concepts, you can skip to the [Demo](#demo) section below.
