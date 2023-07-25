@@ -1,6 +1,8 @@
 #
 name: Create and publish a Docker image
 
+permissions: write-all
+
 # Configures this workflow to run every time a change is pushed to the branch called main, master, or release (for releases).
 on:
   push:
