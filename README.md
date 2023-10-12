@@ -202,5 +202,5 @@ The pipebox image can be built with the `latest` and `x.y.z` tag using the [buil
 
 ```sh
 ./build.sh --no-cache
-docker push --all-tags ghcr.io/colossal-compsci/pipebox
+docker push --all-tags <registry>/<namespace>/pipebox
 ```
